@@ -1,13 +1,26 @@
-name := "neovim-scala"
+lazy val commonSettings = Seq(
+  organization := "xyz.aoei",
+  version := "1.0",
+  scalaVersion := "2.11.8",
 
-organization := "xyz.aoei"
+  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.1"
+)
 
-version := "1.0"
+lazy val root = (project in file(".")).aggregate(bindings).
+  settings(commonSettings: _*).
+  settings(
+    name := "neovim-scala"
+  )
 
-scalaVersion := "2.11.8"
+lazy val bindings = (project in file("Bindings")).
+  settings(commonSettings: _*).
+  settings(
+    name := "neovim-scala-bindings",
 
-libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.1"
+    libraryDependencies += "com.eed3si9n" %% "treehugger" % "0.4.1"
+  )
 
-libraryDependencies += "com.eed3si9n" %% "treehugger" % "0.4.1"
+lazy val generate = taskKey[Unit]("Generate api bindings")
 
-resolvers += Resolver.sonatypeRepo("public")
+generate := (run in Compile in bindings).toTask("").value
+

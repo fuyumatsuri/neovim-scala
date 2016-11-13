@@ -1,13 +1,11 @@
-import java.io.{InputStream, OutputStream}
+import java.io.{File, InputStream, OutputStream, PrintWriter}
 
-import xyz.aoei.msgpack.rpc.{ExtendedType, Session}
+import xyz.aoei.bindings.Generator
+import xyz.aoei.msgpack.rpc.Session
 
-import scala.concurrent.SyncVar
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.SyncVar
 import scala.sys.process.{Process, ProcessIO}
-import xyz.aoei.generate.Generator
-
-import treehugger.forest._
 
 object Main extends App {
   val inputStream = new SyncVar[InputStream]
@@ -18,12 +16,19 @@ object Main extends App {
     stdout => outputStream.put(stdout),
     stdin => inputStream.put(stdin),
     _ => ())
-  pb.run(pio)
+  val process = pb.run(pio)
 
   val session = new Session(inputStream.get, outputStream.get)
   session.request("vim_get_api_info").onSuccess {
     case result =>
-      val (functions, errorTypes, types) = Generator.parseApiInfo(result)
-      println(treeToString(Generator.generateClass(functions, types)))
+      val fileName = "./Bindings.scala"
+
+      println("Writing bindings to " + fileName)
+
+      val pw = new PrintWriter(new File(fileName))
+      pw.write(Generator.generateClassStrings(result).mkString)
+      pw.close()
+
+      process.destroy
   }
 }

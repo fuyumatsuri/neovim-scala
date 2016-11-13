@@ -1,10 +1,16 @@
-package xyz.aoei.generate
+package xyz.aoei.bindings
 
 import treehugger.forest._
 import definitions._
 import treehuggerDSL._
 
 object Generator {
+  def generateClassStrings(data: Any): List[String] = {
+    val (functions, errorTypes, types) = Generator.parseApiInfo(data)
+
+    Generator.generateClass(functions, types) map { treeToString(_) }
+  }
+
   def parseApiInfo(apiInfo: Any) = apiInfo match {
     case x :: List(apiData) =>
       val api = apiData.asInstanceOf[Map[String, _]]
@@ -22,7 +28,7 @@ object Generator {
     def isTypeParam(x: List[String]) = types contains Function.getType(x.head)
 
     // If the function doesn't return anything, we notify, otherwise request
-    val packetType: Tree = Function.getType(function.returnType) match {
+    val packetType: Tree = function.requestType match {
       case "Unit" => REF("session") DOT "notify"
       case x => REF("session") DOT "request" APPLYTYPE x
     }
@@ -45,8 +51,17 @@ object Generator {
   }
 
   def generateClass(functions: List[Function], types: Map[String, Int]) = {
-    CLASSDEF("TTest") withParents "Neovim" := BLOCK (
-      functions map generateFunction(types)
-    )
+    val functionGroups = functions.groupBy(_.funcClass)
+
+    ("vim" :: types.keys.toList) map {
+      case "vim" =>
+        CLASSDEF("Neovim") withParents "NeovimBase" := BLOCK (
+          functionGroups("vim") map generateFunction(types)
+        )
+      case x =>
+        CLASSDEF(x) withParents "TypeBase" := BLOCK (
+          functionGroups(x.toLowerCase) map generateFunction(types)
+        )
+    }
   }
 }

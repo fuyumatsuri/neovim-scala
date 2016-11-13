@@ -1,4 +1,4 @@
-package xyz.aoei.generate
+package xyz.aoei.bindings
 
 object Function {
   // regex to match on array types. Pattern matching on both "ArrayOf(String)" and "ArrayOf(String, 2)" with
@@ -29,7 +29,9 @@ class Function(data: Map[String, String]) {
     case _ => throw new IllegalArgumentException("unable to process name: " + data("name"))
   }
 
-  val returnType: String = Function.getType(data("return_type")) match {
+  val requestType: String = Function.getType(data("return_type"))
+
+  val returnType: String = requestType match {
     case x if x == "Unit" => x
     case x => "Future[" + x + "]"
   }
