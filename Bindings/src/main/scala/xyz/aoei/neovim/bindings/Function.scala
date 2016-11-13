@@ -1,4 +1,4 @@
-package xyz.aoei.bindings
+package xyz.aoei.neovim.bindings
 
 object Function {
   // regex to match on array types. Pattern matching on both "ArrayOf(String)" and "ArrayOf(String, 2)" with

@@ -1,14 +1,22 @@
-package xyz.aoei.bindings
+package xyz.aoei.neovim.bindings
 
 import treehugger.forest._
 import definitions._
 import treehuggerDSL._
 
 object Generator {
-  def generateClassStrings(data: Any): List[String] = {
+  def generate(data: Any) : String = {
+    val imports = List(
+      IMPORT("scala.concurrent", "Future"),
+      IMPORT("xyz.aoei.msgpack.rpc", "Session")
+    )
     val (functions, errorTypes, types) = Generator.parseApiInfo(data)
 
-    Generator.generateClass(functions, types) map { treeToString(_) }
+    val bindings = BLOCK(
+      imports ::: Generator.generateClass(functions, types)
+    ) inPackage "xyz.aoei.neovim"
+
+    treeToString(bindings)
   }
 
   def parseApiInfo(apiInfo: Any) = apiInfo match {
@@ -54,13 +62,16 @@ object Generator {
     val functionGroups = functions.groupBy(_.funcClass)
 
     ("vim" :: types.keys.toList) map {
-      case "vim" =>
-        CLASSDEF("Neovim") withParents "NeovimBase" := BLOCK (
-          functionGroups("vim") map generateFunction(types)
+      case "vim" => (
+        CLASSDEF("Neovim")
+          withParents "NeovimBase" := BLOCK(
+          functionGroups("vim") map generateFunction(types))
         )
-      case x =>
-        CLASSDEF(x) withParents "TypeBase" := BLOCK (
-          functionGroups(x.toLowerCase) map generateFunction(types)
+      case x => (
+        CLASSDEF(x)
+          withParams(VAL("session", "Session"), VAL("data", "Array[Byte]"))
+          withParents "TypeBase" := BLOCK(
+          functionGroups(x.toLowerCase) map generateFunction(types))
         )
     }
   }

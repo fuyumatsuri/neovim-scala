@@ -1,7 +1,7 @@
 import java.io.{File, InputStream, OutputStream, PrintWriter}
 
-import xyz.aoei.bindings.Generator
 import xyz.aoei.msgpack.rpc.Session
+import xyz.aoei.neovim.bindings.Generator
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.SyncVar
@@ -26,7 +26,7 @@ object Main extends App {
       println("Writing bindings to " + fileName)
 
       val pw = new PrintWriter(new File(fileName))
-      pw.write(Generator.generateClassStrings(result).mkString)
+      pw.write(Generator.generate(result))
       pw.close()
 
       process.destroy
