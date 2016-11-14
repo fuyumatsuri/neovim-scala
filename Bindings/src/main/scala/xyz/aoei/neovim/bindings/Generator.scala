@@ -7,8 +7,9 @@ import treehuggerDSL._
 object Generator {
   def generate(data: Any) : String = {
     val imports = List(
+      IMPORT("java.io", "InputStream", "OutputStream"),
       IMPORT("scala.concurrent", "Future"),
-      IMPORT("xyz.aoei.msgpack.rpc", "Session")
+      IMPORT("xyz.aoei.msgpack.rpc", "Session", "ExtendedType")
     )
     val (functions, errorTypes, types) = Generator.parseApiInfo(data)
 
@@ -61,18 +62,19 @@ object Generator {
   def generateClass(functions: List[Function], types: Map[String, Int]) = {
     val functionGroups = functions.groupBy(_.funcClass)
 
+
     ("vim" :: types.keys.toList) map {
-      case "vim" => (
-        CLASSDEF("Neovim")
-          withParents "NeovimBase" := BLOCK(
-          functionGroups("vim") map generateFunction(types))
-        )
-      case x => (
-        CLASSDEF(x)
+      case "vim" =>
+        (CLASSDEF("Neovim")
+          withParams(VAL("in", "InputStream"), VAL("out", "OutputStream"),
+            VAL("types", "List[ExtendedType[AnyRef]]") := REF("Nil") )
+          withParents "NeovimBase(in, out, types)" := BLOCK(
+          functionGroups("vim") map generateFunction(types)))
+      case x =>
+        (CLASSDEF(x)
           withParams(VAL("session", "Session"), VAL("data", "Array[Byte]"))
           withParents "TypeBase" := BLOCK(
-          functionGroups(x.toLowerCase) map generateFunction(types))
-        )
+          functionGroups(x.toLowerCase) map generateFunction(types)))
     }
   }
 }

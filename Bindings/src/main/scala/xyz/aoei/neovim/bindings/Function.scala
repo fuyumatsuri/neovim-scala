@@ -9,7 +9,9 @@ object Function {
   // Strings are returned so that we don't have to worry about extended types
   val typeMap = Map (
     "Integer" -> "Int",
-    "void" -> "Unit"
+    "void" -> "Unit",
+    "Dictionary" -> "Map[String, Int]", // currently only used for `vim_get_color_map` which is `Map[String, Int]`
+    "Array" -> "Array[Any]"
   )
 
   def getType(t: String): String = t match {

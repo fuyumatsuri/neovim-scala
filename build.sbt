@@ -3,7 +3,7 @@ lazy val commonSettings = Seq(
   version := "1.0",
   scalaVersion := "2.11.8",
 
-  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.1"
+  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.2"
 )
 
 lazy val root = (project in file(".")).aggregate(bindings).
