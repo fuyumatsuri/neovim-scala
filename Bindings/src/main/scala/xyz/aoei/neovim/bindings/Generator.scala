@@ -34,7 +34,7 @@ object Generator {
   }
 
   def generateFunction(types: Map[String, Int])(function: Function) = {
-    def isTypeParam(x: List[String]) = types contains Function.getType(x.head)
+    def isTypeParam(x: List[String]) = function.funcClass == Function.getType(x.head).toLowerCase
 
     // If the function doesn't return anything, we notify, otherwise request
     val packetType: Tree = function.requestType match {
@@ -54,9 +54,12 @@ object Generator {
       case x => REF(x(1))
     }
 
+    val funcDef =
+      if (funcParams.isEmpty && function.returnType != "Unit")DEF(function.name, function.returnType)
+      else DEF(function.name, function.returnType) withParams funcParams
+
     // Build the function
-    DEF(function.name, function.returnType) withParams funcParams :=
-      packetType APPLY ( LIT(function.apiName) :: requestParams )
+      funcDef := packetType APPLY ( LIT(function.apiName) :: requestParams )
   }
 
   def generateClass(functions: List[Function], types: Map[String, Int]) = {
