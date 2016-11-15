@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
   libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.2"
 )
 
-lazy val root = (project in file(".")).aggregate(bindings).
+lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
     name := "neovim-scala"
@@ -17,7 +17,8 @@ lazy val bindings = (project in file("Bindings")).
   settings(
     name := "neovim-scala-bindings",
 
-    libraryDependencies += "com.eed3si9n" %% "treehugger" % "0.4.1"
+    libraryDependencies += "com.eed3si9n" %% "treehugger" % "0.4.1",
+    libraryDependencies += "com.geirsson" %% "scalafmt" % "0.4.10"
   )
 
 lazy val generate = taskKey[Unit]("Generate api bindings")

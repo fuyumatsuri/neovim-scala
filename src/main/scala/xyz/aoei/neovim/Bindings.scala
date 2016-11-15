@@ -6,17 +6,28 @@ import scala.concurrent.Future
 
 import xyz.aoei.msgpack.rpc.{Session, ExtendedType}
 
-class Neovim(val in: InputStream, val out: OutputStream, val types: List[ExtendedType[AnyRef]] = Nil) extends NeovimBase(in, out, types) {
-  def uiAttach(width: Int, height: Int, enable_rgb: Boolean): Unit = session.notify("ui_attach", width, height, enable_rgb)
+class Neovim(val in: InputStream, val out: OutputStream) extends NeovimBase(in, out) {
+  override def types =
+    List(ExtendedType(classOf[Buffer], 0, (buf: Buffer) => buf.data,
+            (bytes: Array[Byte]) => new Buffer(session, bytes)),
+        ExtendedType(classOf[Window], 1, (win: Window) => win.data,
+            (bytes: Array[Byte]) => new Window(session, bytes)),
+        ExtendedType(classOf[Tabpage], 2, (tab: Tabpage) => tab.data,
+            (bytes: Array[Byte]) => new Tabpage(session, bytes)))
+  def uiAttach(width: Int, height: Int, enable_rgb: Boolean): Unit =
+    session.notify("ui_attach", width, height, enable_rgb)
   def uiDetach(): Unit = session.notify("ui_detach")
   def uiTryResize(width: Int, height: Int): Future[Object] = session.request[Object]("ui_try_resize", width, height)
   def command(str: String): Unit = session.notify("vim_command", str)
-  def feedkeys(keys: String, mode: String, escape_csi: Boolean): Unit = session.notify("vim_feedkeys", keys, mode, escape_csi)
+  def feedkeys(keys: String, mode: String, escape_csi: Boolean): Unit =
+    session.notify("vim_feedkeys", keys, mode, escape_csi)
   def input(keys: String): Future[Int] = session.request[Int]("vim_input", keys)
-  def replaceTermcodes(str: String, from_part: Boolean, do_lt: Boolean, special: Boolean): Future[String] = session.request[String]("vim_replace_termcodes", str, from_part, do_lt, special)
+  def replaceTermcodes(str: String, from_part: Boolean, do_lt: Boolean, special: Boolean): Future[String] =
+    session.request[String]("vim_replace_termcodes", str, from_part, do_lt, special)
   def commandOutput(str: String): Future[String] = session.request[String]("vim_command_output", str)
   def eval(str: String): Future[Object] = session.request[Object]("vim_eval", str)
-  def callFunction(fname: String, args: Array[Any]): Future[Object] = session.request[Object]("vim_call_function", fname, args)
+  def callFunction(fname: String, args: Array[Any]): Future[Object] =
+    session.request[Object]("vim_call_function", fname, args)
   def strwidth(str: String): Future[Int] = session.request[Int]("vim_strwidth", str)
   def listRuntimePaths(): Future[List[String]] = session.request[List[String]]("vim_list_runtime_paths")
   def changeDirectory(dir: String): Unit = session.notify("vim_change_directory", dir)
@@ -53,12 +64,18 @@ class Buffer(val session: Session, val data: Array[Byte]) extends TypeBase {
   def getLine(index: Int): Future[String] = session.request[String]("buffer_get_line", this, index)
   def setLine(index: Int, line: String): Unit = session.notify("buffer_set_line", this, index, line)
   def delLine(index: Int): Unit = session.notify("buffer_del_line", this, index)
-  def getLineSlice(start: Int, end: Int, include_start: Boolean, include_end: Boolean): Future[List[String]] = session.request[List[String]]("buffer_get_line_slice", this, start, end, include_start, include_end)
-  def getLines(start: Int, end: Int, strict_indexing: Boolean): Future[List[String]] = session.request[List[String]]("buffer_get_lines", this, start, end, strict_indexing)
-  def setLineSlice(start: Int, end: Int, include_start: Boolean, include_end: Boolean, replacement: List[String]): Unit = session.notify("buffer_set_line_slice", this, start, end, include_start, include_end, replacement)
-  def setLines(start: Int, end: Int, strict_indexing: Boolean, replacement: List[String]): Unit = session.notify("buffer_set_lines", this, start, end, strict_indexing, replacement)
+  def getLineSlice(start: Int, end: Int, include_start: Boolean, include_end: Boolean): Future[List[String]] =
+    session.request[List[String]]("buffer_get_line_slice", this, start, end, include_start, include_end)
+  def getLines(start: Int, end: Int, strict_indexing: Boolean): Future[List[String]] =
+    session.request[List[String]]("buffer_get_lines", this, start, end, strict_indexing)
+  def setLineSlice(start: Int, end: Int, include_start: Boolean, include_end: Boolean,
+      replacement: List[String]): Unit =
+    session.notify("buffer_set_line_slice", this, start, end, include_start, include_end, replacement)
+  def setLines(start: Int, end: Int, strict_indexing: Boolean, replacement: List[String]): Unit =
+    session.notify("buffer_set_lines", this, start, end, strict_indexing, replacement)
   def getVar(name: String): Future[Object] = session.request[Object]("buffer_get_var", this, name)
-  def setVar(name: String, value: Object): Future[Object] = session.request[Object]("buffer_set_var", this, name, value)
+  def setVar(name: String, value: Object): Future[Object] =
+    session.request[Object]("buffer_set_var", this, name, value)
   def delVar(name: String): Future[Object] = session.request[Object]("buffer_del_var", this, name)
   def getOption(name: String): Future[Object] = session.request[Object]("buffer_get_option", this, name)
   def setOption(name: String, value: Object): Unit = session.notify("buffer_set_option", this, name, value)
@@ -68,8 +85,10 @@ class Buffer(val session: Session, val data: Array[Byte]) extends TypeBase {
   def isValid(): Future[Boolean] = session.request[Boolean]("buffer_is_valid", this)
   def insert(lnum: Int, lines: List[String]): Unit = session.notify("buffer_insert", this, lnum, lines)
   def getMark(name: String): Future[List[Int]] = session.request[List[Int]]("buffer_get_mark", this, name)
-  def addHighlight(src_id: Int, hl_group: String, line: Int, col_start: Int, col_end: Int): Future[Int] = session.request[Int]("buffer_add_highlight", this, src_id, hl_group, line, col_start, col_end)
-  def clearHighlight(src_id: Int, line_start: Int, line_end: Int): Unit = session.notify("buffer_clear_highlight", this, src_id, line_start, line_end)
+  def addHighlight(src_id: Int, hl_group: String, line: Int, col_start: Int, col_end: Int): Future[Int] =
+    session.request[Int]("buffer_add_highlight", this, src_id, hl_group, line, col_start, col_end)
+  def clearHighlight(src_id: Int, line_start: Int, line_end: Int): Unit =
+    session.notify("buffer_clear_highlight", this, src_id, line_start, line_end)
 }
 
 class Window(val session: Session, val data: Array[Byte]) extends TypeBase {
@@ -81,7 +100,8 @@ class Window(val session: Session, val data: Array[Byte]) extends TypeBase {
   def getWidth(): Future[Int] = session.request[Int]("window_get_width", this)
   def setWidth(width: Int): Unit = session.notify("window_set_width", this, width)
   def getVar(name: String): Future[Object] = session.request[Object]("window_get_var", this, name)
-  def setVar(name: String, value: Object): Future[Object] = session.request[Object]("window_set_var", this, name, value)
+  def setVar(name: String, value: Object): Future[Object] =
+    session.request[Object]("window_set_var", this, name, value)
   def delVar(name: String): Future[Object] = session.request[Object]("window_del_var", this, name)
   def getOption(name: String): Future[Object] = session.request[Object]("window_get_option", this, name)
   def setOption(name: String, value: Object): Unit = session.notify("window_set_option", this, name, value)
@@ -93,7 +113,8 @@ class Window(val session: Session, val data: Array[Byte]) extends TypeBase {
 class Tabpage(val session: Session, val data: Array[Byte]) extends TypeBase {
   def getWindows(): Future[List[Window]] = session.request[List[Window]]("tabpage_get_windows", this)
   def getVar(name: String): Future[Object] = session.request[Object]("tabpage_get_var", this, name)
-  def setVar(name: String, value: Object): Future[Object] = session.request[Object]("tabpage_set_var", this, name, value)
+  def setVar(name: String, value: Object): Future[Object] =
+    session.request[Object]("tabpage_set_var", this, name, value)
   def delVar(name: String): Future[Object] = session.request[Object]("tabpage_del_var", this, name)
   def getWindow(): Future[Window] = session.request[Window]("tabpage_get_window", this)
   def isValid(): Future[Boolean] = session.request[Boolean]("tabpage_is_valid", this)

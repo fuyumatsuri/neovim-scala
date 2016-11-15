@@ -24,7 +24,7 @@ object Generator {
     case x :: List(apiData) =>
       val api = apiData.asInstanceOf[Map[String, _]]
 
-      val types: Map[String, Int] = api("types").asInstanceOf[Map[String, Int]]
+      val types: Map[String, Int] = api("types").asInstanceOf[Map[String, Map[String,Int]]] map (x => (x._1, x._2("id")))
 
       val functions: List[Function] = api("functions").asInstanceOf[List[Map[String, String]]] map { x => new Function(x) }
 
@@ -62,19 +62,28 @@ object Generator {
   def generateClass(functions: List[Function], types: Map[String, Int]) = {
     val functionGroups = functions.groupBy(_.funcClass)
 
+    val typeRegistrations = types.toList map generateTypeRegistration
+    val typesOverride = DEFINFER("types") withFlags Flags.OVERRIDE := LIST(typeRegistrations)
 
-    ("vim" :: types.keys.toList) map {
-      case "vim" =>
-        (CLASSDEF("Neovim")
-          withParams(VAL("in", "InputStream"), VAL("out", "OutputStream"),
-            VAL("types", "List[ExtendedType[AnyRef]]") := REF("Nil") )
-          withParents "NeovimBase(in, out, types)" := BLOCK(
-          functionGroups("vim") map generateFunction(types)))
-      case x =>
-        (CLASSDEF(x)
-          withParams(VAL("session", "Session"), VAL("data", "Array[Byte]"))
-          withParents "TypeBase" := BLOCK(
-          functionGroups(x.toLowerCase) map generateFunction(types)))
-    }
+    val mainFunctions = functionGroups("vim") map generateFunction(types)
+    val mainClass = (CLASSDEF("Neovim")
+      withParams(VAL("in", "InputStream"), VAL("out", "OutputStream"))
+      withParents "NeovimBase(in, out)" := BLOCK(typesOverride :: mainFunctions))
+
+    mainClass :: (types.keys.toList map { x =>
+      val classFunctions = functionGroups(x.toLowerCase) map generateFunction(types)
+      (CLASSDEF(x)
+        withParams(VAL("session", "Session"), VAL("data", "Array[Byte]"))
+        withParents "TypeBase" := BLOCK(classFunctions))
+    })
+  }
+
+  def generateTypeRegistration(classType: (String, Int)) = classType match {
+    case (name, id) =>
+      val shortName = name.toLowerCase.take(3)
+      REF("ExtendedType") APPLY (REF("classOf") APPLYTYPE name, REF(id.toString),
+        LAMBDA(PARAM(shortName, name)) ==> (REF(shortName) DOT "data"),
+        LAMBDA(PARAM("bytes", "Array[Byte]")) ==> NEW(name, REF("session"), REF("bytes"))
+        )
   }
 }
