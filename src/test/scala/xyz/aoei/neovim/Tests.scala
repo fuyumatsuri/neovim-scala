@@ -57,14 +57,14 @@ class Tests extends FlatSpec with BeforeAndAfter with ScalaFutures {
   it should "deal with custom types" in {
     nvim.command("vsp")
     Await.result(for {
-      windows <- nvim.getWindows
+      windows <- nvim.listWins
       window <- {
         assert(windows.length == 2)
         assert(windows.head.isInstanceOf[Window])
         assert(windows(1).isInstanceOf[Window])
 
-        nvim.setCurrentWindow(windows(1))
-        nvim.getCurrentWindow
+        nvim.setCurrentWin(windows(1))
+        nvim.getCurrentWin
       }
     } yield assert(window.data.deep == windows(1).data.deep), 1 second)
   }

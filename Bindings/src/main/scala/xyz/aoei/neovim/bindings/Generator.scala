@@ -24,17 +24,21 @@ object Generator {
     case x :: List(apiData) =>
       val api = apiData.asInstanceOf[Map[String, _]]
 
-      val types: Map[String, Int] = api("types").asInstanceOf[Map[String, Map[String,Int]]] map (x => (x._1, x._2("id")))
+      val types: List[NvimType] = (api("types").asInstanceOf[Map[String, Map[String, String]]] toList) map {
+        x: (String, Map[String, String]) => new NvimType(x._1, x._2)
+      }
 
-      val functions: List[Function] = api("functions").asInstanceOf[List[Map[String, String]]] map { x => new Function(x) }
+      val functions: List[Function] = api("functions").asInstanceOf[List[Map[String, String]]] map {
+        x => new Function(x, types)
+      }
 
       val errorTypes = api("error_types")
 
       (functions, errorTypes, types)
   }
 
-  def generateFunction(types: Map[String, Int])(function: Function) = {
-    def isTypeParam(x: List[String]) = function.funcClass == Function.getType(x.head).toLowerCase
+  def generateFunction(function: Function) = {
+    def isTypeParam(x: List[String]) = function.nvimType == Function.getType(x.head)
 
     // If the function doesn't return anything, we notify, otherwise request
     val packetType: Tree = function.requestType match {
@@ -62,31 +66,31 @@ object Generator {
       funcDef := packetType APPLY ( LIT(function.apiName) :: requestParams )
   }
 
-  def generateClass(functions: List[Function], types: Map[String, Int]) = {
-    val functionGroups = functions.groupBy(_.funcClass)
+  def generateClass(functions: List[Function], types: List[NvimType]) = {
+    // filter out deprecated functions and group by type
+    val functionGroups = functions filter (_.deprecated < 0) groupBy(_.nvimType)
 
-    val typeRegistrations = types.toList map generateTypeRegistration
+    val typeRegistrations = types map generateTypeRegistration
     val typesOverride = DEFINFER("types") withFlags Flags.OVERRIDE := LIST(typeRegistrations)
 
-    val mainFunctions = functionGroups("vim") map generateFunction(types)
+    val mainFunctions = functionGroups("Nvim") map generateFunction
     val mainClass = (CLASSDEF("Neovim")
       withParams(VAL("in", "InputStream"), VAL("out", "OutputStream"))
       withParents "NeovimBase(in, out)" := BLOCK(typesOverride :: mainFunctions))
 
-    mainClass :: (types.keys.toList map { x =>
-      val classFunctions = functionGroups(x.toLowerCase) map generateFunction(types)
-      (CLASSDEF(x)
+    mainClass :: (types map { x =>
+      val classFunctions = functionGroups(x.name) map generateFunction
+      (CLASSDEF(x.name)
         withParams(VAL("session", "Session"), VAL("data", "Array[Byte]"))
         withParents "TypeBase" := BLOCK(classFunctions))
     })
   }
 
-  def generateTypeRegistration(classType: (String, Int)) = classType match {
-    case (name, id) =>
-      val shortName = name.toLowerCase.take(3)
-      REF("ExtendedType") APPLY (REF("classOf") APPLYTYPE name, REF(id.toString),
-        LAMBDA(PARAM(shortName, name)) ==> (REF(shortName) DOT "data"),
-        LAMBDA(PARAM("bytes", "Array[Byte]")) ==> NEW(name, REF("session"), REF("bytes"))
-        )
+  def generateTypeRegistration(nvimType: NvimType) = {
+    val shortName = nvimType.name.toLowerCase.take(3)
+    REF("ExtendedType") APPLY (REF("classOf") APPLYTYPE nvimType.name, REF(nvimType.id.toString),
+      LAMBDA(PARAM(shortName, nvimType.name)) ==> (REF(shortName) DOT "data"),
+      LAMBDA(PARAM("bytes", "Array[Byte]")) ==> NEW(nvimType.name, REF("session"), REF("bytes"))
+      )
   }
 }

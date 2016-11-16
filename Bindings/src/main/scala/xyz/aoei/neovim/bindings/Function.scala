@@ -20,16 +20,20 @@ object Function {
   }
 }
 
-class Function(data: Map[String, String]) {
-  private def toCamelCase(s: List[String]): String = s.head :: (s.tail map {x => x.head.toUpper + x.tail}) mkString
+class Function(data: Map[String, String], types: List[NvimType]) {
+  private def toCamelCase(str: String): String = {
+    val s: List[String] = str.split("_").toList
+    s.head :: (s.tail map {x => x.head.toUpper + x.tail}) mkString
+  }
 
   val apiName: String = data("name")
 
-  val (name: String, funcClass: String) = data("name").split("_").toList match {
-    case "ui" :: xs => (toCamelCase("ui" :: xs), "vim")
-    case x :: xs => (toCamelCase(xs), x)
-    case _ => throw new IllegalArgumentException("unable to process name: " + data("name"))
+  val (nvimType: String, prefix: String) = types find (x => apiName.startsWith(x.prefix)) match {
+    case Some(x) => (x.name, x.prefix)
+    case None => ("Nvim", "nvim_")
   }
+
+  val name: String = toCamelCase(apiName.split(prefix).last)
 
   val requestType: String = Function.getType(data("return_type"))
 
@@ -39,4 +43,6 @@ class Function(data: Map[String, String]) {
   }
 
   val params: List[List[String]] = data("parameters").asInstanceOf[List[List[String]]]
+
+  val deprecated: Int = data.getOrElse("deprecated_since", -1).asInstanceOf[Int]
 }
