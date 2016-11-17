@@ -12,4 +12,6 @@ class NeovimBase(in: InputStream, out: OutputStream) {
   def onRequest(callback: (String, List[Any], ResponseHandler) => Unit) = session.onRequest(callback)
 
   def onNotification(callback: (String, List[Any]) => Unit) = session.onNotification(callback)
+
+  def quit(): Unit = session.notify("nvim_command", "qa!")
 }
