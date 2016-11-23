@@ -1,11 +1,11 @@
 lazy val commonSettings = Seq(
   organization := "xyz.aoei",
-  version := "1.0",
+  version := "1.1",
   scalaVersion := "2.11.8",
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
-  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.2"
+  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.3"
 )
 
 lazy val root = (project in file(".")).
