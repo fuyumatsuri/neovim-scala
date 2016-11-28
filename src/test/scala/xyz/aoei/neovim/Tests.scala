@@ -66,6 +66,6 @@ class Tests extends FlatSpec with BeforeAndAfter with ScalaFutures {
         nvim.setCurrentWin(windows(1))
         nvim.getCurrentWin
       }
-    } yield assert(window.data.deep == windows(1).data.deep), 1 second)
+    } yield assert(window == windows(1)), 1 second)
   }
 }
