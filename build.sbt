@@ -5,7 +5,7 @@ lazy val commonSettings = Seq(
 
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.0" % "test",
 
-  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.3"
+  libraryDependencies += "xyz.aoei" %% "msgpack-rpc-scala" % "1.4"
 )
 
 lazy val root = (project in file(".")).
