@@ -4,7 +4,7 @@ Scala bindings for the [Neovim](https://github.com/neovim/neovim) API.
 ## SBT
 Add dependency:
 
-    libraryDependencies += "xyz.aoei" %% "neovim-scala" % "1.4"
+    libraryDependencies += "xyz.aoei" %% "neovim-scala" % "1.2"
 
 ## Usage
 This package provides a single class which takes an `InputStream` and an `OutputStream`,
