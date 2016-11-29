@@ -21,7 +21,7 @@ object Main extends App {
   val process = pb.run(pio)
 
   val session = new Session(inputStream.get, outputStream.get)
-  session.request("vim_get_api_info").onSuccess {
+  session.request("nvim_get_api_info").onSuccess {
     case result =>
       val bindings = Generator.generate(result)
 

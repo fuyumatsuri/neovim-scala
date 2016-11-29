@@ -10,7 +10,7 @@ object Function {
   val typeMap = Map (
     "Integer" -> "Int",
     "void" -> "Unit",
-    "Dictionary" -> "Map[String, Int]", // currently only used for `vim_get_color_map` which is `Map[String, Int]`
+    "Dictionary" -> "Map[String, Any]",
     "Array" -> "Array[Any]"
   )
 
